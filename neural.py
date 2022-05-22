@@ -18,26 +18,22 @@ import os
 X=[]
 Z=[]
 IMG_SIZE=75
-BLANK_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\o'
-BISHOP_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\b'
-KING_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\k'
-KNIGHT_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\n'
-PAWN_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\p'
-QUEEN_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\q'
-ROOK_DIR= r'C:\Users\Dota2\Desktop\projects\chess-dataset\figures\r'
-
-def assign_label(img, figure_type):
-    return figure_type
+BLANK_DIR= r'chess-dataset\figures\o'
+BISHOP_DIR= r'chess-dataset\figures\b'
+KING_DIR= r'chess-dataset\figures\k'
+KNIGHT_DIR= r'chess-dataset\figures\n'
+PAWN_DIR= r'chess-dataset\figures\p'
+QUEEN_DIR= r'chess-dataset\figures\q'
+ROOK_DIR= r'chess-dataset\figures\r'
 
 def make_train_data(figure_type,DIR):
     for img in tqdm(os.listdir(DIR)):
-        label=assign_label(img,figure_type)
         path = os.path.join(DIR,img)
         img = cv2.imread(path,cv2.IMREAD_COLOR)
         img = cv2.resize(img, (IMG_SIZE,IMG_SIZE))
-        
         X.append(np.array(img))
-        Z.append(str(label))
+        Z.append(str(figure_type))
+
 make_train_data('o', BLANK_DIR)
 make_train_data('b', BISHOP_DIR)
 make_train_data('k', KING_DIR)
@@ -48,13 +44,12 @@ make_train_data('r', ROOK_DIR)
 
 print(len(X))
 
-le=LabelEncoder()
-Y=le.fit_transform(Z)
-Y= tf.keras.utils.to_categorical(Y, 7)
-X=np.array(X)
-X=X/255
-# bknopqr
-x_train,x_test,y_train,y_test=train_test_split(X,Y,test_size=0.25,random_state=42)
+le = LabelEncoder()
+Y = le.fit_transform(Z)
+Y = tf.keras.utils.to_categorical(Y, 7)
+X = np.array(X)
+X = X/255.
+x_train, x_test, y_train, y_test=train_test_split(X, Y, test_size=0.25, random_state=42)
 
 train_datagen = ImageDataGenerator(
       rotation_range=40,
@@ -63,26 +58,26 @@ train_datagen = ImageDataGenerator(
       vertical_flip=True,
       horizontal_flip=True)
 
-# train_datagen.fit(x_train)
+train_datagen.fit(x_train)
 
-# base_model = InceptionResNetV2(include_top=False, weights='imagenet', input_shape=(75, 75, 3))
-# x = base_model.output
-# x = layers.GlobalAveragePooling2D()(x)
-# x = layers.Dense(1024, activation='relu')(x)
-# predictions = layers.Dense(7, activation='softmax')(x)
-# model = models.Model(inputs=base_model.input, outputs=predictions)
+base_model = InceptionResNetV2(include_top=False, weights='imagenet', input_shape=(75, 75, 3))
+x = base_model.output
+x = layers.GlobalAveragePooling2D()(x)
+x = layers.Dense(1024, activation ='relu')(x)
+predictions = layers.Dense(7, activation ='softmax')(x)
+model = models.Model(inputs=base_model.input, outputs=predictions)
 
-# for layer in model.layers[:249]:
-#    layer.trainable = False
-# for layer in model.layers[249:]:
-#    layer.trainable = True
+for layer in model.layers[:249]:
+   layer.trainable = False
+for layer in model.layers[249:]:
+   layer.trainable = True
 
-# adam = tf.keras.optimizers.Adam(lr=0.0001)
-# model.compile(adam, loss='categorical_crossentropy', metrics=['accuracy'])
-# #model.summary()
+adam = tf.keras.optimizers.Adam(lr=0.0001)
+model.compile(adam, loss='categorical_crossentropy', metrics=['accuracy'])
+#model.summary()
 
-# History = model.fit_generator(train_datagen.flow(x_train,y_train, batch_size=500),
-#                               epochs = 10, validation_data = (x_test,y_test),
-#                               verbose = 1, steps_per_epoch=x_train.shape[0] // 500)
+History = model.fit_generator(train_datagen.flow(x_train,y_train, batch_size=500),
+                              epochs = 15, validation_data = (x_test,y_test),
+                              verbose = 1, steps_per_epoch=x_train.shape[0] // 500)
 
-# model.save('model.h5')
+model.save('model.h5')
